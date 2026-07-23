@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<title>Expenses</title>
+<style>
+  :root{
+    --bg-deep:#0b0c14;
+    --glass-bg: rgba(255,255,255,0.055);
+    --glass-bg-strong: rgba(255,255,255,0.09);
+    --glass-border: rgba(255,255,255,0.14);
+    --text-1:#f3f2f8;
+    --text-2: rgba(243,242,248,0.62);
+    --text-3: rgba(243,242,248,0.38);
+    --accent-a:#8b7bff;
+    --accent-b:#31d8c9;
+    --accent-gold:#f2c675;
+    --danger:#ff7a7a;
+    --radius-lg:26px;
+    --radius-md:18px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 8%, rgba(139,123,255,0.22), transparent 45%),
+      radial-gradient(circle at 85% 18%, rgba(49,216,201,0.16), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(242,198,117,0.08), transparent 50%),
+      var(--bg-deep);
+    color:var(--text-1);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overflow-x:hidden;
+  }
+  .blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:0.55;z-index:0;pointer-events:none;}
+  .blob1{width:280px;height:280px;background:var(--accent-a);top:-100px;left:-80px;animation:float1 16s ease-in-out infinite;}
+  .blob2{width:260px;height:260px;background:var(--accent-b);bottom:-100px;right:-90px;animation:float2 18s ease-in-out infinite;}
+  @keyframes float1{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,40px)}}
+  @keyframes float2{0%,100%{transform:translate(0,0)}50%{transform:translate(-25px,-35px)}}
+
+  .app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:20px 16px 100px;}
+
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+  header h1{font-size:22px;margin:0;font-weight:700;letter-spacing:-0.02em;}
+  header h1 span{background:linear-gradient(120deg,var(--accent-a),var(--accent-b));-webkit-background-clip:text;background-clip:text;color:transparent;}
+  #settingsBtn{
+    width:40px;height:40px;border-radius:50%;border:1px solid var(--glass-border);
+    background:var(--glass-bg);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    color:var(--text-2);font-size:17px;cursor:pointer;
+  }
+
+  .glass-card{
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+    border-radius:var(--radius-lg);
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    padding:18px;
+    margin-bottom:14px;
+  }
+
+  .settings-panel label{display:block;font-size:12px;color:var(--text-2);margin-bottom:6px;}
+  .settings-panel input{width:100%;padding:12px 14px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);background:rgba(0,0,0,0.25);color:var(--text-1);font-size:13px;margin-bottom:10px;outline:none;}
+  .settings-panel .row{display:flex;gap:8px;}
+  .btn{
+    border:none;cursor:pointer;font-weight:600;font-size:14px;border-radius:var(--radius-sm);padding:12px 16px;color:#0b0c14;
+    background:linear-gradient(120deg,var(--accent-b),var(--accent-a));
+  }
+  .btn.ghost{background:var(--glass-bg-strong);color:var(--text-1);border:1px solid var(--glass-border);}
+  .hint{font-size:12px;color:var(--text-3);margin-top:2px;}
+  .hint a{color:var(--accent-b);cursor:pointer;text-decoration:underline;}
+  .instructions{margin-top:10px;font-size:12px;color:var(--text-2);line-height:1.6;white-space:pre-wrap;background:rgba(0,0,0,0.25);border-radius:var(--radius-sm);padding:12px;max-height:260px;overflow-y:auto;}
+  .hidden{display:none !important;}
+
+  .summary-month{text-align:center;padding:26px 18px;}
+  .summary-month .label{font-size:13px;color:var(--text-2);margin-bottom:6px;letter-spacing:0.02em;}
+  .summary-month .amount{font-size:38px;font-weight:800;letter-spacing:-0.02em;background:linear-gradient(120deg,#fff,var(--accent-b));-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+  .summary-row{display:flex;gap:12px;}
+  .summary-row .glass-card{flex:1;text-align:center;padding:16px 10px;margin-bottom:14px;}
+  .summary-row .label{font-size:11.5px;color:var(--text-2);margin-bottom:4px;}
+  .summary-row .amount{font-size:19px;font-weight:700;color:var(--text-1);}
+
+  .date-filter{display:flex;align-items:center;gap:12px;}
+  .date-filter label{font-size:12px;color:var(--text-2);white-space:nowrap;}
+  .date-filter input[type=date]{
+    flex:1;background:rgba(0,0,0,0.25);border:1px solid var(--glass-border);border-radius:var(--radius-sm);
+    color:var(--text-1);padding:10px 12px;font-size:13px;outline:none;color-scheme:dark;
+  }
+  .date-filter .dsum{font-size:14px;font-weight:700;color:var(--accent-gold);white-space:nowrap;}
+
+  .add-form h2, .transactions h2{font-size:15px;margin:0 0 12px;color:var(--text-1);font-weight:700;display:flex;align-items:center;justify-content:space-between;}
+  .add-form input[type=number], .add-form input[type=text]{
+    width:100%;padding:13px 14px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);
+    background:rgba(0,0,0,0.25);color:var(--text-1);font-size:15px;outline:none;margin-bottom:10px;
+  }
+  .add-form input[type=number]{font-size:22px;font-weight:700;}
+  .add-form input::placeholder{color:var(--text-3);}
+
+  .category-scroll{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:2px;scrollbar-width:none;}
+  .category-scroll::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:0 0 auto;padding:9px 14px;border-radius:999px;border:1px solid var(--glass-border);
+    background:rgba(255,255,255,0.04);color:var(--text-2);font-size:13px;cursor:pointer;white-space:nowrap;
+    display:flex;align-items:center;gap:6px;transition:all .15s ease;
+  }
+  .chip.active{background:linear-gradient(120deg,var(--accent-a),var(--accent-b));color:#0b0c14;font-weight:700;border-color:transparent;}
+  .chip.add-chip{border-style:dashed;}
+
+  .new-cat-form{display:flex;gap:8px;margin-bottom:10px;}
+  .new-cat-form input{padding:11px;border-radius:var(--radius-sm);border:1px solid var(--glass-border);background:rgba(0,0,0,0.25);color:var(--text-1);outline:none;}
+  .new-cat-form input.emoji{width:54px;text-align:center;font-size:18px;}
+  .new-cat-form input.name{flex:1;font-size:13px;}
+
+  #addBtn{width:100%;padding:14px;font-size:15px;margin-top:4px;}
+  #addBtn:disabled{opacity:0.5;}
+
+  .tx-count{font-size:12px;font-weight:500;color:var(--text-3);}
+
+  .tx-row{
+    display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .tx-row:last-child{border-bottom:none;}
+  .tx-emoji{
+    width:40px;height:40px;flex:0 0 40px;border-radius:14px;background:rgba(255,255,255,0.06);
+    display:flex;align-items:center;justify-content:center;font-size:19px;
+  }
+  .tx-info{flex:1;min-width:0;}
+  .tx-cat{font-size:14px;font-weight:600;color:var(--text-1);}
+  .tx-note{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tx-right{text-align:right;flex:0 0 auto;}
+  .tx-amount{font-size:15px;font-weight:700;color:var(--text-1);}
+  .tx-del{background:none;border:none;color:var(--text-3);font-size:11px;margin-top:2px;cursor:pointer;padding:2px 6px;}
+  .tx-del:active{color:var(--danger);}
+
+  .empty-state{text-align:center;padding:30px 10px;color:var(--text-3);font-size:13px;}
+  .empty-state .big{font-size:30px;display:block;margin-bottom:8px;}
+
+  .toast{
+    position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+    background:rgba(20,20,28,0.92);border:1px solid var(--glass-border);color:var(--text-1);
+    padding:12px 18px;border-radius:999px;font-size:13px;backdrop-filter:blur(14px);z-index:50;
+    box-shadow:0 8px 24px rgba(0,0,0,0.5);max-width:85vw;text-align:center;
+  }
+</style>
+</head>
+<body>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+
+<div class="app">
+  <header>
+    <h1>💸 <span>Expenses</span></h1>
+    <button id="settingsBtn" title="Settings">⚙️</button>
+  </header>
+
+  <div id="settingsPanel" class="glass-card settings-panel hidden">
+    <label>Google Sheet Web App URL</label>
+    <input id="sheetUrlInput" type="text" placeholder="https://script.google.com/macros/s/XXXX/exec" />
+    <div class="row">
+      <button class="btn" id="saveUrlBtn">Save & Connect</button>
+      <button class="btn ghost" id="closeSettingsBtn">Close</button>
+    </div>
+    <p class="hint">Sheet connect nahi hai? <a id="showInstructions">Setup steps dekhein</a></p>
+    <div id="instructionsBox" class="instructions hidden"></div>
+  </div>
+
+  <div class="glass-card summary-month">
+    <div class="label">This Month</div>
+    <div class="amount" id="monthTotal">₹0</div>
+  </div>
+
+  <div class="summary-row">
+    <div class="glass-card">
+      <div class="label">Today</div>
+      <div class="amount" id="todayTotal">₹0</div>
+    </div>
+    <div class="glass-card">
+      <div class="label">This Year</div>
+      <div class="amount" id="yearTotal">₹0</div>
+    </div>
+  </div>
+
+  <div class="glass-card date-filter">
+    <label>Date</label>
+    <input type="date" id="dateFilterInput" />
+    <div class="dsum" id="dateFilterTotal">₹0</div>
+  </div>
+
+  <div class="glass-card add-form">
+    <h2>Add Expense</h2>
+    <input type="number" id="amountInput" placeholder="₹ Amount" inputmode="decimal" />
+    <div class="category-scroll" id="categoryScroll"></div>
+    <div class="new-cat-form hidden" id="newCatForm">
+      <input class="emoji" id="newCatEmoji" type="text" placeholder="🏷️" maxlength="4" />
+      <input class="name" id="newCatName" type="text" placeholder="Category naam" />
+      <button class="btn" id="saveCatBtn">✓</button>
+    </div>
+    <input type="text" id="noteInput" placeholder="Note (optional)" />
+    <button class="btn" id="addBtn">Add Expense</button>
+  </div>
+
+  <div class="glass-card transactions">
+    <h2><span id="txTitle">Transactions</span><span class="tx-count" id="txCount"></span></h2>
+    <div id="txList"></div>
+  </div>
+</div>
+
+<script>
+const DEFAULT_CATEGORIES = [
+  {emoji:'🍔', name:'Food'},
+  {emoji:'🚕', name:'Transport'},
+  {emoji:'🛍️', name:'Shopping'},
+  {emoji:'🎬', name:'Entertainment'},
+  {emoji:'💊', name:'Health'},
+  {emoji:'🏠', name:'Bills'},
+  {emoji:'📚', name:'Education'},
+  {emoji:'✈️', name:'Travel'},
+  {emoji:'🎁', name:'Gifts'},
+  {emoji:'📦', name:'Other'},
+];
+
+const INSTRUCTIONS = `1) Google Sheets me nayi Sheet banayein.
+2) Extensions > Apps Script kholein, purana code hatayein aur yeh paste karein:
+
+function doGet(e) {
+  var action = e.parameter.action;
+  var sheet = getSheet_();
+  var result;
+  if (action === 'add') {
+    var id = new Date().getTime();
+    sheet.appendRow([id, e.parameter.date, e.parameter.category, Number(e.parameter.amount), e.parameter.note || '']);
+    result = {status:'ok', id:id};
+  } else if (action === 'delete') {
+    var data = sheet.getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(e.parameter.id)) { sheet.deleteRow(i+1); break; }
+    }
+    result = {status:'deleted'};
+  } else {
+    var data = sheet.getDataRange().getValues();
+    var rows = [];
+    for (var i = 1; i < data.length; i++) {
+      rows.push({ id:data[i][0], date:data[i][1], category:data[i][2], amount:data[i][3], note:data[i][4] });
+    }
+    result = rows;
+  }
+  var callback = e.parameter.callback;
+  if (callback) {
+    return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+function getSheet_() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Expenses');
+  if (!sheet) { sheet = ss.insertSheet('Expenses'); sheet.appendRow(['ID','Date','Category','Amount','Note']); }
+  return sheet;
+}
+
+3) Deploy > New deployment > Type: Web app.
+4) Execute as: Me | Who has access: Anyone.
+5) Deploy, permission allow karein, aur jo /exec URL mile wo yahan settings me paste karein.
+
+ZAROORI: Ye app is chat preview ke andar kaam NAHI karegi (security sandbox). Ise GitHub Pages jaisi free site par host karke hi Sheet live feed hoga.`;
+
+let state = {
+  expenses: [],
+  categories: [...DEFAULT_CATEGORIES],
+  selectedCategory: DEFAULT_CATEGORIES[0].name,
+  sheetUrl: '',
+};
+
+const $ = id => document.getElementById(id);
+
+function pad(n){ return n < 10 ? '0'+n : ''+n; }
+function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function fmtMoney(n){ return '₹' + Number(n||0).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+function fmtDateNice(iso){
+  const d = new Date(iso + 'T00:00:00');
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function showToast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 2600);
+}
+
+function loadLocalConfig(){
+  try{
+    const url = localStorage.getItem('expense-sheet-url');
+    if (url) state.sheetUrl = url;
+    const cats = localStorage.getItem('expense-categories');
+    if (cats) state.categories = [...DEFAULT_CATEGORIES, ...JSON.parse(cats)];
+  }catch(e){}
+}
+function saveSheetUrlLocal(url){
+  state.sheetUrl = url;
+  try{ localStorage.setItem('expense-sheet-url', url); }catch(e){}
+}
+function saveCustomCategoryLocal(cat){
+  let custom = [];
+  try{
+    const cats = localStorage.getItem('expense-categories');
+    if (cats) custom = JSON.parse(cats);
+  }catch(e){}
+  custom.push(cat);
+  try{ localStorage.setItem('expense-categories', JSON.stringify(custom)); }catch(e){}
+}
+
+let jsonpCounter = 0;
+function apiCall(params){
+  return new Promise((resolve, reject) => {
+    if (!state.sheetUrl){ reject(new Error('No sheet URL configured')); return; }
+    const cbName = 'jsonp_cb_' + (jsonpCounter++) + '_' + Date.now();
+    const qs = new URLSearchParams({...params, callback: cbName}).toString();
+    const url = state.sheetUrl + (state.sheetUrl.includes('?') ? '&' : '?') + qs;
+
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('Request timed out'));
+    }, 15000);
+
+    function cleanup(){
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+      clearTimeout(timeout);
+    }
+
+    window[cbName] = (data) => { cleanup(); resolve(data); };
+
+    const script = document.createElement('script');
+    script.src = url;
+    script.onerror = () => { cleanup(); reject(new Error('Script load failed - URL/deployment check karein')); };
+    document.body.appendChild(script);
+  });
+}
+
+async function apiGet(){
+  if (!state.sheetUrl) return [];
+  return await apiCall({});
+}
+
+async function refreshExpenses(){
+  if (!state.sheetUrl){ renderAll(); return; }
+  try{
+    const rows = await apiGet();
+    state.expenses = rows.map(r => ({
+      id: r.id, date: r.date, category: r.category, amount: Number(r.amount)||0, note: r.note || ''
+    }));
+  }catch(e){
+    showToast('Sheet se data load nahi ho paaya');
+  }
+  renderAll();
+}
+
+function categoryEmoji(name){
+  const c = state.categories.find(c=>c.name===name);
+  return c ? c.emoji : '📦';
+}
+
+function renderCategoryChips(){
+  const el = $('categoryScroll');
+  el.innerHTML = '';
+  state.categories.forEach(cat=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.selectedCategory === cat.name ? ' active' : '');
+    chip.innerHTML = `<span>${cat.emoji}</span><span>${cat.name}</span>`;
+    chip.onclick = () => { state.selectedCategory = cat.name; renderCategoryChips(); };
+    el.appendChild(chip);
+  });
+  const addChip = document.createElement('div');
+  addChip.className = 'chip add-chip';
+  addChip.innerHTML = '<span>+</span><span>Add</span>';
+  addChip.onclick = () => { $('newCatForm').classList.toggle('hidden'); };
+  el.appendChild(addChip);
+}
+
+function computeTotals(){
+  const now = new Date();
+  const todayISO = toISODate(now);
+  const monthKey = todayISO.slice(0,7);
+  const yearKey = todayISO.slice(0,4);
+  let month=0, today=0, year=0;
+  state.expenses.forEach(e=>{
+    if (!e.date) return;
+    if (e.date === todayISO) today += e.amount;
+    if (e.date.slice(0,7) === monthKey) month += e.amount;
+    if (e.date.slice(0,4) === yearKey) year += e.amount;
+  });
+  $('monthTotal').textContent = fmtMoney(month);
+  $('todayTotal').textContent = fmtMoney(today);
+  $('yearTotal').textContent = fmtMoney(year);
+}
+
+function renderDateFilterTotal(){
+  const iso = $('dateFilterInput').value;
+  const total = state.expenses.filter(e=>e.date===iso).reduce((s,e)=>s+e.amount,0);
+  $('dateFilterTotal').textContent = fmtMoney(total);
+  $('txTitle').textContent = iso === toISODate(new Date()) ? 'Today' : fmtDateNice(iso);
+}
+
+function renderTxList(){
+  const iso = $('dateFilterInput').value;
+  const list = state.expenses.filter(e=>e.date===iso).sort((a,b)=> (b.id||0)-(a.id||0));
+  $('txCount').textContent = list.length ? `${list.length} entries` : '';
+  const el = $('txList');
+  if (!list.length){
+    el.innerHTML = `<div class="empty-state"><span class="big">🌿</span>Is date par koi expense nahi hai.</div>`;
+    return;
+  }
+  el.innerHTML = '';
+  list.forEach(e=>{
+    const row = document.createElement('div');
+    row.className = 'tx-row';
+    row.innerHTML = `
+      <div class="tx-emoji">${categoryEmoji(e.category)}</div>
+      <div class="tx-info">
+        <div class="tx-cat">${e.category}</div>
+        <div class="tx-note">${e.note ? e.note : fmtDateNice(e.date)}</div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount">${fmtMoney(e.amount)}</div>
+        <button class="tx-del" data-id="${e.id}">Delete</button>
+      </div>
+    `;
+    row.querySelector('.tx-del').onclick = () => deleteExpense(e.id);
+    el.appendChild(row);
+  });
+}
+
+function renderAll(){
+  computeTotals();
+  renderDateFilterTotal();
+  renderTxList();
+  renderCategoryChips();
+}
+
+async function deleteExpense(id){
+  if (!confirm('Yeh expense delete karein?')) return;
+  state.expenses = state.expenses.filter(e=>e.id!=id);
+  renderAll();
+  try{
+    await apiCall({action:'delete', id});
+    showToast('Delete ho gaya');
+  }catch(e){
+    showToast('Delete fail hua: ' + (e.message || 'unknown'));
+    refreshExpenses();
+  }
+}
+
+async function addExpense(){
+  const amount = parseFloat($('amountInput').value);
+  const note = $('noteInput').value.trim();
+  const date = $('dateFilterInput').value || toISODate(new Date());
+  if (!amount || amount <= 0){ showToast('Sahi amount daalein'); return; }
+  if (!state.sheetUrl){ showToast('Pehle Google Sheet connect karein'); $('settingsPanel').classList.remove('hidden'); return; }
+
+  const btn = $('addBtn');
+  btn.disabled = true; btn.textContent = 'Adding...';
+  const tempId = 'temp-' + Date.now();
+  const localExpense = { id: tempId, date, category: state.selectedCategory, amount, note };
+  state.expenses.push(localExpense);
+  renderAll();
+
+  try{
+    const res = await apiCall({ action:'add', date, category: state.selectedCategory, amount, note });
+    localExpense.id = res.id || tempId;
+    $('amountInput').value = '';
+    $('noteInput').value = '';
+    showToast('Expense add ho gaya ✓');
+  }catch(e){
+    state.expenses = state.expenses.filter(x=>x.id!==tempId);
+    showToast('Error: ' + (e.message || 'unknown'));
+  }
+  btn.disabled = false; btn.textContent = 'Add Expense';
+  renderAll();
+}
+
+function initSettings(){
+  $('settingsBtn').onclick = () => {
+    $('sheetUrlInput').value = state.sheetUrl;
+    $('settingsPanel').classList.toggle('hidden');
+  };
+  $('closeSettingsBtn').onclick = () => $('settingsPanel').classList.add('hidden');
+  $('saveUrlBtn').onclick = () => {
+    const url = $('sheetUrlInput').value.trim();
+    if (!url){ showToast('URL daalein'); return; }
+    saveSheetUrlLocal(url);
+    showToast('Connected! Data load ho raha hai...');
+    $('settingsPanel').classList.add('hidden');
+    refreshExpenses();
+  };
+  $('showInstructions').onclick = () => {
+    const box = $('instructionsBox');
+    box.textContent = INSTRUCTIONS;
+    box.classList.toggle('hidden');
+  };
+}
+
+function initCategoryForm(){
+  $('saveCatBtn').onclick = () => {
+    const emoji = $('newCatEmoji').value.trim() || '🏷️';
+    const name = $('newCatName').value.trim();
+    if (!name){ showToast('Category naam daalein'); return; }
+    const cat = { emoji, name };
+    state.categories.push(cat);
+    state.selectedCategory = name;
+    saveCustomCategoryLocal(cat);
+    $('newCatEmoji').value = '';
+    $('newCatName').value = '';
+    $('newCatForm').classList.add('hidden');
+    renderCategoryChips();
+    showToast('Category add ho gayi');
+  };
+}
+
+function init(){
+  const todayISO = toISODate(new Date());
+  $('dateFilterInput').value = todayISO;
+  $('dateFilterInput').addEventListener('change', () => { renderDateFilterTotal(); renderTxList(); });
+  $('addBtn').onclick = addExpense;
+  initSettings();
+  initCategoryForm();
+
+  loadLocalConfig();
+  renderCategoryChips();
+
+  if (!state.sheetUrl){
+    $('settingsPanel').classList.remove('hidden');
+    $('instructionsBox').textContent = INSTRUCTIONS;
+    $('instructionsBox').classList.remove('hidden');
+  }
+
+  renderAll();
+  refreshExpenses();
+}
+
+init();
+</script>
+</body>
+</html>
