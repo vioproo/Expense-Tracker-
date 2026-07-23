@@ -244,7 +244,7 @@ function doGet(e) {
     var data = sheet.getDataRange().getValues();
     var rows = [];
     for (var i = 1; i < data.length; i++) {
-      rows.push({ id:data[i][0], date:data[i][1], category:data[i][2], amount:data[i][3], note:data[i][4] });
+      rows.push({ id:data[i][0], date:formatDate_(data[i][1]), category:data[i][2], amount:data[i][3], note:data[i][4] });
     }
     result = rows;
   }
@@ -254,6 +254,12 @@ function doGet(e) {
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
+function formatDate_(val) {
+  if (Object.prototype.toString.call(val) === '[object Date]') {
+    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  }
+  return val;
+}
 function getSheet_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Expenses');
@@ -261,7 +267,8 @@ function getSheet_() {
   return sheet;
 }
 
-3) Deploy > New deployment > Type: Web app.
+3) Deploy > Manage deployments > pencil icon > Version: 'New version' > Deploy.
+   (Agar pehli baar kar rahe hain to Deploy > New deployment > Type: Web app)
 4) Execute as: Me | Who has access: Anyone.
 5) Deploy, permission allow karein, aur jo /exec URL mile wo yahan settings me paste karein.
 
