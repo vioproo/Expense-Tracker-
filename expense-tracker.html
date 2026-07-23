@@ -164,8 +164,6 @@
       <button class="btn" id="saveUrlBtn">Save & Connect</button>
       <button class="btn ghost" id="closeSettingsBtn">Close</button>
     </div>
-    <p class="hint">Sheet connect nahi hai? <a id="showInstructions">Setup steps dekhein</a></p>
-    <div id="instructionsBox" class="instructions hidden"></div>
   </div>
 
   <div class="glass-card summary-month">
@@ -223,62 +221,11 @@ const DEFAULT_CATEGORIES = [
   {emoji:'📦', name:'Other'},
 ];
 
-const INSTRUCTIONS = `1) Google Sheets me nayi Sheet banayein.
-2) Extensions > Apps Script kholein, purana code hatayein aur yeh paste karein:
-
-function doGet(e) {
-  var action = e.parameter.action;
-  var sheet = getSheet_();
-  var result;
-  if (action === 'add') {
-    var id = new Date().getTime();
-    sheet.appendRow([id, e.parameter.date, e.parameter.category, Number(e.parameter.amount), e.parameter.note || '']);
-    result = {status:'ok', id:id};
-  } else if (action === 'delete') {
-    var data = sheet.getDataRange().getValues();
-    for (var i = 1; i < data.length; i++) {
-      if (String(data[i][0]) === String(e.parameter.id)) { sheet.deleteRow(i+1); break; }
-    }
-    result = {status:'deleted'};
-  } else {
-    var data = sheet.getDataRange().getValues();
-    var rows = [];
-    for (var i = 1; i < data.length; i++) {
-      rows.push({ id:data[i][0], date:formatDate_(data[i][1]), category:data[i][2], amount:data[i][3], note:data[i][4] });
-    }
-    result = rows;
-  }
-  var callback = e.parameter.callback;
-  if (callback) {
-    return ContentService.createTextOutput(callback + '(' + JSON.stringify(result) + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-}
-function formatDate_(val) {
-  if (Object.prototype.toString.call(val) === '[object Date]') {
-    return Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd');
-  }
-  return val;
-}
-function getSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Expenses');
-  if (!sheet) { sheet = ss.insertSheet('Expenses'); sheet.appendRow(['ID','Date','Category','Amount','Note']); }
-  return sheet;
-}
-
-3) Deploy > Manage deployments > pencil icon > Version: 'New version' > Deploy.
-   (Agar pehli baar kar rahe hain to Deploy > New deployment > Type: Web app)
-4) Execute as: Me | Who has access: Anyone.
-5) Deploy, permission allow karein, aur jo /exec URL mile wo yahan settings me paste karein.
-
-ZAROORI: Ye app is chat preview ke andar kaam NAHI karegi (security sandbox). Ise GitHub Pages jaisi free site par host karke hi Sheet live feed hoga.`;
-
 let state = {
   expenses: [],
   categories: [...DEFAULT_CATEGORIES],
   selectedCategory: DEFAULT_CATEGORIES[0].name,
-  sheetUrl: '',
+  sheetUrl: 'https://script.google.com/macros/s/AKfycbzKTXKAv6E0ZslXb3SWXT_omuTsk_38_4-zy5Yhbx3AiEYHnIuc4NL8E2Lfh9hxzYdqPA/exec',
 };
 
 const $ = id => document.getElementById(id);
@@ -468,7 +415,6 @@ async function addExpense(){
   const note = $('noteInput').value.trim();
   const date = $('dateFilterInput').value || toISODate(new Date());
   if (!amount || amount <= 0){ showToast('Sahi amount daalein'); return; }
-  if (!state.sheetUrl){ showToast('Pehle Google Sheet connect karein'); $('settingsPanel').classList.remove('hidden'); return; }
 
   const btn = $('addBtn');
   btn.disabled = true; btn.textContent = 'Adding...';
@@ -505,11 +451,6 @@ function initSettings(){
     $('settingsPanel').classList.add('hidden');
     refreshExpenses();
   };
-  $('showInstructions').onclick = () => {
-    const box = $('instructionsBox');
-    box.textContent = INSTRUCTIONS;
-    box.classList.toggle('hidden');
-  };
 }
 
 function initCategoryForm(){
@@ -539,12 +480,6 @@ function init(){
 
   loadLocalConfig();
   renderCategoryChips();
-
-  if (!state.sheetUrl){
-    $('settingsPanel').classList.remove('hidden');
-    $('instructionsBox').textContent = INSTRUCTIONS;
-    $('instructionsBox').classList.remove('hidden');
-  }
 
   renderAll();
   refreshExpenses();
